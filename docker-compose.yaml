@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+
+  db:
+    image: postgres:14.6-alpine
+    environment:
+      POSTGRES_USER: yury
+      POSTGRES_PASSWORD: 12345
+      POSTGRES_DB: certification
+    volumes:
+      - certification_data:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U yury -d certification
+      interval: 3s
+      timeout: 3s
+      retries: 15
+    ports:
+      - "5432:5432"
+
+  api:
+    build: .
+    restart: always
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_USER: yury
+      POSTGRES_PASSWORD: 12345
+      POSTGRES_DB: certification
+      POSTGRES_PORT: 5432
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    command: sh -c 'sleep 10 && python manage.py runserver 0.0.0.0:8000'
+    volumes:
+      - ./certification/:/opt/certification
+      - ./suppliers_network/:/opt/suppliers_network
+
+
+volumes:
+  certification_data:
+    driver: local
